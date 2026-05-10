@@ -1,0 +1,36 @@
+# MovieLens ham verisi (260 MB+ — GitHub'a yüklenmiyor)
+data/
+
+# Delta Lake çıktıları (üretilebilir dosyalar)
+delta/
+
+# MLflow veritabanı ve artifact'lar
+mlflow/mlflow.db
+mlflow/artifacts/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.env
+venv/
+.venv/
+
+# Spark geçici dosyaları
+*.crc
+_SUCCESS
+.spark-staging-*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
