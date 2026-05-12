@@ -67,23 +67,17 @@ ratings.csv
 [Genişletilmiş Metrikler]
 (extended_metrics.py)
     │
-    ├── ALS: RMSE, MAE, MSE, R²
-    ├── Öneri: Precision@K, Recall@K, NDCG
-    └── Sınıflandırma: Confusion Matrix, Macro/Micro
-    │
     ▼
 [Gelişmiş Görselleştirmeler]
 (advanced_visualizations.py)
-    │
-    ├── ROC Curves, Learning Curve
-    └── Residual Plots, Karşılaştırma Grafikleri
     │
     ▼
 [MLflow Loglama]
 (log_model.py)
     │
     ▼
-MLflow UI: http://localhost:5000
+[Gerçek Zamanlı Dashboard]
+(Streamlit - localhost:8501)
 ```
 
 ---
@@ -112,6 +106,9 @@ movielens-end2end-bigdata/
 ├── docker-compose.yml          # Tüm servisleri ayağa kaldırır
 ├── run_pipeline.sh             # Tek tuşla tüm pipeline'ı çalıştıran orkestrasyon scripti
 ├── README.md                   # Bu dosya
+│
+├── dashboard/
+│   └── app.py                  # Gerçek Zamanlı Streamlit Arayüzü
 │
 ├── kafka/
 │   └── producer.py             # CSV → Kafka (JSON stream)
@@ -349,7 +346,7 @@ Bu adım şunları hesaplar:
 - **Öneri Sistemi:** Precision@5, Precision@10, Recall@5, Recall@10, NDCG@10
 - **Sınıflandırma:** Weighted/Macro/Micro Precision, Recall, F1, AUC-ROC, Confusion Matrix
 
-### 11. MLflow'a Model Loglama
+### 12. MLflow'a Model Loglama
 
 ```bash
 docker exec -it spark-master \
@@ -358,12 +355,17 @@ docker exec -it spark-master \
   /app/spark/log_model.py
 ```
 
+### 13. Gerçek Zamanlı Dashboard'u Görüntüleme (Canlı Demo)
+Dashboard `docker-compose` ayağa kalktığı andan itibaren çalışır. Tüm adımlar bittiğinde veya akış esnasında sonuçları görmek için:
+Tarayıcınızda açın: **[http://localhost:8501](http://localhost:8501)**
+
 ---
 
 ## Arayüzler
 
 | Servis       | URL                        | Açıklama |
 |--------------|----------------------------|----------|
+| Dashboard UI | **http://localhost:8501**   | Canlı veri akışı ve model metrikleri (Streamlit) |
 | Spark Web UI | http://localhost:8081       | Spark job ve stage izleme |
 | MLflow UI    | http://localhost:5000       | Model takip, metrik karşılaştırma, artifact'lar |
 

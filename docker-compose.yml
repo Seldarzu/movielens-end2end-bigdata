@@ -126,3 +126,20 @@ services:
       interval: 20s
       timeout: 10s
       retries: 5
+
+  # ─── Streamlit Dashboard ───────────────────────────────────────────────────
+  streamlit:
+    image: python:3.10-slim
+    container_name: streamlit-dashboard
+    command: >
+      bash -c "pip install streamlit deltalake pandas plotly --quiet &&
+               streamlit run /app/dashboard/app.py --server.port 8501 --server.address 0.0.0.0"
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./dashboard:/app/dashboard
+      - ./delta:/app/delta
+      - ./mlflow:/mlflow
+    networks:
+      - pipeline-net
+    restart: on-failure
