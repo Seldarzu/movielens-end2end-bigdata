@@ -1,6 +1,6 @@
 # MovieLens 25M — Uçtan Uca Büyük Veri Pipeline'ı
 
-> **Takım:** Arzu (Kıdemli Mühendis) · Ayaz (Junior Mühendis)  
+> **Takım:** Arzu · Ayaz  
 > **Son güncelleme:** 13 Mayıs 2026  
 > **Veri Seti:** [MovieLens 25M](https://grouplens.org/datasets/movielens/25m/) (~25 milyon rating, ~62.000 film, ~162.000 kullanıcı)
 
