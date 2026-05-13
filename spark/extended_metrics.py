@@ -138,8 +138,8 @@ def compute_recommendation_metrics(model, train, test, k_values=[5, 10]):
         avg_prec = pr.select(avg("precision_at_k")).first()[0] or 0.0
         avg_rec = pr.select(avg("recall_at_k")).first()[0] or 0.0
 
-        results[f"precision@{k}"] = round(avg_prec, 4)
-        results[f"recall@{k}"] = round(avg_rec, 4)
+        results[f"precision_at_{k}"] = round(avg_prec, 4)
+        results[f"recall_at_{k}"] = round(avg_rec, 4)
         logger.info("  Precision@%d: %.4f | Recall@%d: %.4f", k, avg_prec, k, avg_rec)
 
     # NDCG hesaplama (K=10)
@@ -171,7 +171,7 @@ def compute_recommendation_metrics(model, train, test, k_values=[5, 10]):
         "ndcg", when(col("idcg") > 0, col("dcg") / col("idcg")).otherwise(0.0))
 
     avg_ndcg = ndcg_df.select(avg("ndcg")).first()[0] or 0.0
-    results["ndcg"] = round(avg_ndcg, 4)
+    results[f"ndcg_at_{k_ndcg}"] = round(avg_ndcg, 4)
     logger.info("  NDCG@%d: %.4f", k_ndcg, avg_ndcg)
 
     return results

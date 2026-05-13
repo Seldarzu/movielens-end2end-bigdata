@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 # ─── Sabitler ─────────────────────────────────────────────────────────────────
 MLFLOW_TRACKING_URI  = "http://mlflow:5000"    # Konteyner içi MLflow adresi
 EXPERIMENT_NAME      = "movielens-als"         # MLflow deney adı
-ALS_MODEL_PATH       = "/app/delta/als_model"  # Spark'ın kaydettiği model dizini
+ALS_MODEL_PATH       = "/app/delta/als_model_best"  # Spark'ın kaydettiği model dizini
 
 # Model parametreleri (model.py ile senkronize olmalı)
 ALS_RANK      = 10

@@ -7,6 +7,7 @@ import json
 import time
 import logging
 import sys
+import os
 from kafka import KafkaProducer
 from kafka.errors import KafkaError, NoBrokersAvailable
 
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 KAFKA_BROKER = "kafka:29092"          # Konteyner içi Kafka adresi (pipeline-net)
 TOPIC_NAME   = "ratings"             # Mesajların gönderileceği topic
 DATA_PATH    = "/app/data/ratings.csv"  # Docker volume mount yolu
-DELAY_SEC    = 0.01                  # Mesajlar arası gecikme (gerçekçi streaming için)
+DELAY_SEC    = float(os.environ.get("DELAY_SEC", "0.01")) # Mesajlar arası gecikme
 LOG_INTERVAL = 10_000                # Her kaç mesajda bir ilerleme logu yazılsın
 
 

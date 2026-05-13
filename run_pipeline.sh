@@ -109,7 +109,7 @@ echo ""
 
 print_step 1 "Docker servisleri başlatılıyor..."
 
-docker-compose up -d 2>&1
+docker-compose up --build -d 2>&1
 
 if [ $? -ne 0 ]; then
     print_error "Docker servisleri başlatılamadı. Docker Desktop çalışıyor mu?"

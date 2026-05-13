@@ -2,7 +2,6 @@
 # Tüm servisleri ayağa kaldıran docker-compose dosyası
 # Servisler: Zookeeper, Kafka, Kafka Producer, Spark Master, Spark Worker, MLflow
 
-version: "3.8"
 
 networks:
   pipeline-net:
@@ -53,13 +52,10 @@ services:
 
   # ─── Kafka Producer ───────────────────────────────────────────────────────
   kafka-producer:
-    image: python:3.10-slim
+    build:
+      context: .
+      dockerfile: Dockerfile.producer
     container_name: kafka-producer
-    # Kafka hazır olana kadar bekle, sonra bağımlılıkları kur ve producer'ı çalıştır
-    command: >
-      bash -c "pip install kafka-python --quiet &&
-               echo 'Kafka Producer başlıyor...' &&
-               python /app/kafka/producer.py"
     depends_on:
       kafka:
         condition: service_healthy
@@ -72,7 +68,9 @@ services:
 
   # ─── Spark Master ──────────────────────────────────────────────────────────
   spark-master:
-    image: apache/spark:3.4.1
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
     container_name: spark-master
     environment:
       - SPARK_NO_DAEMONIZE=true
@@ -90,7 +88,9 @@ services:
 
   # ─── Spark Worker ──────────────────────────────────────────────────────────
   spark-worker:
-    image: apache/spark:3.4.1
+    build:
+      context: .
+      dockerfile: Dockerfile.spark
     container_name: spark-worker
     entrypoint: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
     environment:
@@ -109,10 +109,10 @@ services:
 
   # ─── MLflow Tracking Server ────────────────────────────────────────────────
   mlflow:
-    image: python:3.10-slim
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
     container_name: mlflow
-    # 0.0.0.0 bind zorunlu — aksi halde diğer konteynerler erişemez
-    command: bash -c "pip install mlflow==2.11.1 boto3 --quiet && mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:////mlflow/mlflow.db --default-artifact-root /mlflow/artifacts"
     environment:
       - MLFLOW_HOST=0.0.0.0
     ports:
@@ -129,11 +129,10 @@ services:
 
   # ─── Streamlit Dashboard ───────────────────────────────────────────────────
   streamlit:
-    image: python:3.10-slim
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
     container_name: streamlit-dashboard
-    command: >
-      bash -c "pip install streamlit deltalake pandas plotly --quiet &&
-               streamlit run /app/dashboard/app.py --server.port 8501 --server.address 0.0.0.0"
     ports:
       - "8501:8501"
     volumes:

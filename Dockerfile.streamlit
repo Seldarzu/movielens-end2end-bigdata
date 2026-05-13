@@ -1,0 +1,6 @@
+FROM python:3.10-slim
+WORKDIR /app
+# Gerekli tüm kütüphaneleri sisteme gömüyoruz
+RUN pip install --no-cache-dir streamlit deltalake pandas plotly
+# Uygulama çalışma komutu
+CMD ["streamlit", "run", "/app/dashboard/app.py", "--server.port", "8501", "--server.address", "0.0.0.0"]

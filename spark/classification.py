@@ -43,7 +43,7 @@ EXPERIMENT    = "movielens-classification-regression"
 
 FEATURE_COLS = [
     "day_of_week", "hour_of_day", "month", "season", "is_weekend", "day_period",
-    "user_avg_rating", "user_rating_count", "user_rating_deviation",
+    "user_avg_rating", "user_rating_count",
     "user_rating_variance", "user_activity_days",
     "movie_avg_rating", "movie_rating_count", "movie_age",
     "genre_count", "movie_popularity_trend",
@@ -159,40 +159,60 @@ def train_classifiers(train, test):
 
         with mlflow.start_run(run_name=f"cls_{name}"):
             fitted = model.fit(train_cls)
-            preds = fitted.transform(test_cls)
+            preds       = fitted.transform(test_cls)
+            preds_train = fitted.transform(train_cls)
             elapsed = time.time() - t0
 
-            acc = eval_acc.evaluate(preds)
-            f1 = eval_f1.evaluate(preds)
+            # Test metrikleri
+            acc  = eval_acc.evaluate(preds)
+            f1   = eval_f1.evaluate(preds)
             prec = eval_prec.evaluate(preds)
-            rec = eval_rec.evaluate(preds)
+            rec  = eval_rec.evaluate(preds)
+            # Train metrikleri (overfitting kontrolü)
+            train_acc = eval_acc.evaluate(preds_train)
+            train_f1  = eval_f1.evaluate(preds_train)
 
             try:
                 auc = eval_auc.evaluate(preds)
             except Exception:
                 auc = 0.0
 
+            # Overfitting / underfitting teşhisi
+            gap = round(train_f1 - f1, 4)
+            if gap > 0.05:
+                diagnosis = "OVERFIT"
+            elif f1 < 0.5:
+                diagnosis = "UNDERFIT"
+            else:
+                diagnosis = "OK"
+
             mlflow.log_param("model_type", "classification")
             mlflow.log_param("algorithm", name)
+            mlflow.log_metric("train_accuracy", train_acc)
+            mlflow.log_metric("train_f1", train_f1)
             mlflow.log_metric("accuracy", acc)
             mlflow.log_metric("f1_score", f1)
             mlflow.log_metric("precision", prec)
             mlflow.log_metric("recall", rec)
             mlflow.log_metric("auc_roc", auc)
+            mlflow.log_metric("overfit_gap_f1", gap)
             mlflow.log_metric("train_time_sec", elapsed)
 
-            # Model kaydet
             model_path = os.path.join(MODEL_DIR, f"cls_{name}")
             fitted.write().overwrite().save(model_path)
             mlflow.spark.log_model(fitted, artifact_path=f"cls_{name}",
                                    registered_model_name=f"movielens-{name}")
 
-            logger.info("  Accuracy=%.4f | F1=%.4f | Precision=%.4f | Recall=%.4f | AUC=%.4f | %.1fs",
-                        acc, f1, prec, rec, auc, elapsed)
+            logger.info("  [%s] Train_F1=%.4f | Test_F1=%.4f | Gap=%.4f | Acc=%.4f | AUC=%.4f | %.1fs",
+                        diagnosis, train_f1, f1, gap, acc, auc, elapsed)
 
         results.append({
-            "Model": name, "Accuracy": acc, "F1": f1,
-            "Precision": prec, "Recall": rec, "AUC-ROC": auc,
+            "Model": name,
+            "Train_F1": round(train_f1, 4), "Test_F1": round(f1, 4),
+            "Train_Acc": round(train_acc, 4), "Accuracy": round(acc, 4),
+            "F1": round(f1, 4), "Precision": round(prec, 4),
+            "Recall": round(rec, 4), "AUC-ROC": round(auc, 4),
+            "Overfit_Gap": gap, "Diagnosis": diagnosis,
             "Süre (s)": round(elapsed, 1),
         })
 
@@ -245,34 +265,51 @@ def train_regressors(train, test):
 
         with mlflow.start_run(run_name=f"reg_{name}"):
             fitted = model.fit(train_reg)
-            preds = fitted.transform(test_reg)
+            preds       = fitted.transform(test_reg)
+            preds_train = fitted.transform(train_reg)
             elapsed = time.time() - t0
 
-            rmse = eval_rmse.evaluate(preds)
-            mae = eval_mae.evaluate(preds)
-            r2 = eval_r2.evaluate(preds)
-            mse = eval_mse.evaluate(preds)
+            rmse       = eval_rmse.evaluate(preds)
+            mae        = eval_mae.evaluate(preds)
+            r2         = eval_r2.evaluate(preds)
+            mse        = eval_mse.evaluate(preds)
+            train_rmse = eval_rmse.evaluate(preds_train)
+            train_r2   = eval_r2.evaluate(preds_train)
+
+            gap = round(rmse - train_rmse, 4)
+            if gap > 0.1:
+                diagnosis = "OVERFIT"
+            elif r2 < 0.1:
+                diagnosis = "UNDERFIT"
+            else:
+                diagnosis = "OK"
 
             mlflow.log_param("model_type", "regression")
             mlflow.log_param("algorithm", name)
+            mlflow.log_metric("train_rmse", train_rmse)
+            mlflow.log_metric("train_r2", train_r2)
             mlflow.log_metric("rmse", rmse)
             mlflow.log_metric("mae", mae)
             mlflow.log_metric("r2", r2)
             mlflow.log_metric("mse", mse)
+            mlflow.log_metric("overfit_gap_rmse", gap)
             mlflow.log_metric("train_time_sec", elapsed)
 
-            # Model kaydet
             model_path = os.path.join(MODEL_DIR, f"reg_{name}")
             fitted.write().overwrite().save(model_path)
             mlflow.spark.log_model(fitted, artifact_path=f"reg_{name}",
                                    registered_model_name=f"movielens-{name}")
 
-            logger.info("  RMSE=%.4f | MAE=%.4f | R²=%.4f | MSE=%.4f | %.1fs",
-                        rmse, mae, r2, mse, elapsed)
+            logger.info("  [%s] Train_RMSE=%.4f | Test_RMSE=%.4f | Gap=%.4f | R²=%.4f | %.1fs",
+                        diagnosis, train_rmse, rmse, gap, r2, elapsed)
 
         results.append({
-            "Model": name, "RMSE": rmse, "MAE": mae,
-            "R²": r2, "MSE": mse, "Süre (s)": round(elapsed, 1),
+            "Model": name,
+            "Train_RMSE": round(train_rmse, 4), "RMSE": round(rmse, 4),
+            "Train_R2": round(train_r2, 4), "MAE": round(mae, 4),
+            "R²": round(r2, 4), "MSE": round(mse, 4),
+            "Overfit_Gap": gap, "Diagnosis": diagnosis,
+            "Süre (s)": round(elapsed, 1),
         })
 
         if rmse < best_rmse:
@@ -366,6 +403,41 @@ def plot_training_time(cls_df, reg_df):
     save_fig("19_training_time_comparison")
 
 
+def plot_overfit_check(cls_df, reg_df):
+    """Train vs Test metrik karşılaştırması — overfitting/underfitting görselleştirme."""
+    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+    fig.suptitle("Overfitting / Underfitting Kontrolü", fontsize=16, color="#cba6f7")
+
+    x = np.arange(len(cls_df))
+    w = 0.35
+    axes[0].bar(x - w/2, cls_df["Train_F1"], width=w, label="Train F1", color=PALETTE[0], edgecolor="#1e1e2e")
+    axes[0].bar(x + w/2, cls_df["Test_F1"],  width=w, label="Test F1",  color=PALETTE[1], edgecolor="#1e1e2e")
+    axes[0].set_xticks(x)
+    axes[0].set_xticklabels(cls_df["Model"].str.replace("_", "\n"), fontsize=8)
+    axes[0].set_title("Sınıflandırma: Train F1 vs Test F1")
+    axes[0].set_ylim(0, 1.1)
+    axes[0].legend()
+    axes[0].grid(axis="y")
+    for i, (tr, te, diag) in enumerate(zip(cls_df["Train_F1"], cls_df["Test_F1"], cls_df["Diagnosis"])):
+        color = "#f38ba8" if diag == "OVERFIT" else ("#fab387" if diag == "UNDERFIT" else "#a6e3a1")
+        axes[0].text(i, max(tr, te) + 0.03, diag, ha="center", fontsize=7, color=color, fontweight="bold")
+
+    x = np.arange(len(reg_df))
+    axes[1].bar(x - w/2, reg_df["Train_RMSE"], width=w, label="Train RMSE", color=PALETTE[4], edgecolor="#1e1e2e")
+    axes[1].bar(x + w/2, reg_df["RMSE"],       width=w, label="Test RMSE",  color=PALETTE[5], edgecolor="#1e1e2e")
+    axes[1].set_xticks(x)
+    axes[1].set_xticklabels(reg_df["Model"].str.replace("_", "\n"), fontsize=8)
+    axes[1].set_title("Regresyon: Train RMSE vs Test RMSE")
+    axes[1].legend()
+    axes[1].grid(axis="y")
+    for i, (tr, te, diag) in enumerate(zip(reg_df["Train_RMSE"], reg_df["RMSE"], reg_df["Diagnosis"])):
+        color = "#f38ba8" if diag == "OVERFIT" else ("#fab387" if diag == "UNDERFIT" else "#a6e3a1")
+        axes[1].text(i, max(tr, te) + 0.01, diag, ha="center", fontsize=7, color=color, fontweight="bold")
+
+    plt.tight_layout()
+    save_fig("31_overfit_check")
+
+
 def plot_combined_summary(cls_df, reg_df, best_cls, best_reg):
     """En iyi modelleri özetleyen final grafiği."""
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
@@ -416,6 +488,7 @@ def main():
     plot_regression_comparison(reg_df)
     plot_auc_comparison(cls_df)
     plot_training_time(cls_df, reg_df)
+    plot_overfit_check(cls_df, reg_df)
     plot_combined_summary(cls_df, reg_df, best_cls, best_reg)
 
     # Sonuç tabloları
@@ -423,16 +496,16 @@ def main():
     logger.info("SINIFLANDIRMA SONUÇLARI")
     logger.info("=" * 70)
     for _, r in cls_df.iterrows():
-        logger.info("  %-30s Acc=%.4f F1=%.4f Prec=%.4f Rec=%.4f AUC=%.4f",
-                    r["Model"], r["Accuracy"], r["F1"], r["Precision"], r["Recall"], r["AUC-ROC"])
+        logger.info("  %-30s [%s] TrainF1=%.4f TestF1=%.4f Gap=%.4f Acc=%.4f AUC=%.4f",
+                    r["Model"], r["Diagnosis"], r["Train_F1"], r["Test_F1"], r["Overfit_Gap"], r["Accuracy"], r["AUC-ROC"])
     logger.info("  ★ En İyi: %s", best_cls)
 
     logger.info("=" * 70)
     logger.info("REGRESYON SONUÇLARI")
     logger.info("=" * 70)
     for _, r in reg_df.iterrows():
-        logger.info("  %-30s RMSE=%.4f MAE=%.4f R²=%.4f MSE=%.4f",
-                    r["Model"], r["RMSE"], r["MAE"], r["R²"], r["MSE"])
+        logger.info("  %-30s [%s] TrainRMSE=%.4f TestRMSE=%.4f Gap=%.4f R²=%.4f",
+                    r["Model"], r["Diagnosis"], r["Train_RMSE"], r["RMSE"], r["Overfit_Gap"], r["R²"])
     logger.info("  ★ En İyi: %s", best_reg)
     logger.info("=" * 70)
 
@@ -452,7 +525,7 @@ def main():
         # Grafikleri artifact olarak logla
         for png in ["16_classification_comparison", "17_regression_comparison",
                      "18_auc_roc_comparison", "19_training_time_comparison",
-                     "20_best_models_summary"]:
+                     "31_overfit_check", "20_best_models_summary"]:
             path = os.path.join(PLOT_DIR, f"{png}.png")
             if os.path.exists(path):
                 mlflow.log_artifact(path, artifact_path="comparison_plots")

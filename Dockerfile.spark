@@ -1,0 +1,9 @@
+FROM apache/spark:3.4.1
+
+USER root
+
+# Spark için gerekli veri bilimi kütüphanelerini kur
+RUN pip install --no-cache-dir matplotlib pandas mlflow==2.11.1 scikit-learn seaborn numpy
+
+# Varsayılan kullanıcıya geri dön
+USER 185
